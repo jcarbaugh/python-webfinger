@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
+	<Subject>acct:joe@example.com</Subject>
+	<Alias>http://example.com/profiles/joe</Alias>
+	<Link>
+		<Rel>http://portablecontacts.net/spec/1.0</Rel>
+		<URI>http://example.com/api/people/</URI>
+	</Link>
+	<Link>
+		<Rel>http://webfinger.net/rel/profile-page</Rel>
+		<Rel>http://microformats.org/profile/hcard</Rel>
+		<Rel>describedby</Rel>
+		<MediaType>text/html</MediaType>
+		<URI>http://example.com/profiles/joe</URI>
+	</Link>
+	<Link>
+		<Rel>http://webfinger.net/rel/avatar</Rel>
+		<URI>http://example.com/profiles/joe/photo</URI>
+	</Link>
+</XRD>

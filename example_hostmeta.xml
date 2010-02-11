@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- NOTE: this host-meta end-point is a pre-alpha work in progress.   Don't rely on it. -->
+<!-- Please follow the list at http://groups.google.com/group/webfinger -->
+<XRD xmlns='http://docs.oasis-open.org/ns/xri/xrd-1.0'>
+  <Host xmlns='http://host-meta.net/xrd/1.0'>gmail.com</Host>
+
+  <Link type="http://webfinger.info/rel/service" template="http://www.google.com/s2/webfinger/?user={%userinfo}">
+ 	<Title>This is my webfinger service</Title>
+  </Link>
+</XRD>
