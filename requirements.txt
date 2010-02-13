@@ -1,1 +1,2 @@
-python-xrd
+-e git@github.com:jcarbaugh/python-xrd.git#egg=xrd
+iso8601
