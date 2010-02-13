@@ -2,100 +2,85 @@ from xrd import XRD
 import re
 import urllib, urllib2
 
-#
-# get webfinger response
-#
+RELS = {
+    'avatar': 'http://webfinger.net/rel/avatar',
+    'hcard': 'http://microformats.org/profile/hcard',
+    'open_id': 'http://specs.openid.net/auth/2.0/provider',
+    'portable_contacts': 'http://portablecontacts.net/spec/1.0',
+    'profile': 'http://webfinger.net/rel/profile-page',
+    'xfn': 'http://gmpg.org/xfn/11',
+}
 
-ACCT_RE = re.compile(r'acct:([\w_.]+)@([\w:_.]+)')
-URLTEMPLATE_RE = re.compile(r'\{(%?)(id|uri|userinfo|host)\}')
+WEBFINGER_TYPES = (
+    'lrdd',                                 # current
+    'http://lrdd.net/rel/descriptor',       # deprecated on 12/11/2009
+    'http://webfinger.net/rel/acct-desc',   # deprecated on 11/26/2009
+    'http://webfinger.info/rel/service',    # deprecated on 09/17/2009
+)
 
-def _var_replacer(email):    
-    (local, host) = email.split('@')
-    uri = 'acct:%s' % email
-    rvars = {
-        'id': uri,  # deprecated on 9/17/2009
-        'uri': uri,
-        'userinfo': local,
-        'host': host,
-    }
-    def _replacer(match):
-        (encode, var) = match.groups()
-        val = rvars[var]
-        if encode == '%':
-            val = urllib.quote_plus(val)
-        return val
-    return _replacer
+class WebFingerExpection(Exception):
+    pass
 
-def finger(email, raw=False):
+class WebFingerResponse(object):
     
-    # 1) resolve host-meta URL for acct URI
+    def __init__(self, xrd):
+        self._xrd = xrd
     
-    (local, host) = email.split('@')
-    hostmeta_url = "http://%s/.well-known/host-meta" % host
-    
-    # 2) obtain host-meta file
-    
-    redirect_handler = urllib2.HTTPRedirectHandler()
-    opener = urllib2.build_opener(redirect_handler)
-    opener.addheaders = [('User-agent', 'python-webfinger')]
-    conn = opener.open(hostmeta_url)
-    xrd = XRD.parse(conn.read())
-    #xrd = XRD.parse(open('example_hostmeta.xml').read())
-    conn.close()
-    
-    # verify resource.host == host
-    
-    webfinger_types = (
-        'http://webfinger.net/rel/acct-desc',   # current
-        'http://webfinger.info/rel/service',    # deprecated on 9/17/2009
-        'lrdd',                                 # used by Google
-    )
-    
-    links = [link for link in xrd.links if link.rel in webfinger_types]
+    def __getattr__(self, name):
+        if name in RELS:
+            return self._xrd.find_link(RELS[name], attr='href')
+        return getattr(self._xrd, name)
 
-    if links:
-
-        xrd_url = URLTEMPLATE_RE.sub(_var_replacer(email),  links[0].template)
-        
-        conn = opener.open(xrd_url)
-        xrd_response = conn.read() if raw else XRD.parse(conn.read())
+class WebFingerClient(object):
+    
+    def __init__(self, host, secure=False):
+        self._host = host
+        self._secure = secure
+        self._opener = urllib2.build_opener(urllib2.HTTPRedirectHandler())
+        self._opener.addheaders = [('User-agent', 'python-webfinger')]
+    
+    def _hm_hosts(self, xrd):
+        return [e.value for e in xrd.elements if e.name == 'hm:Host']
+    
+    def xrd(self, url, raw=False):
+        conn = self._opener.open(url)
+        response = conn.read()
         conn.close()
+        return response if raw else XRD.parse(response)
+    
+    def hostmeta(self):
+        protocol = "https" if self._secure else "http"
+        hostmeta_url = "%s://%s/.well-known/host-meta" % (protocol, self._host)
+        return self.xrd(hostmeta_url)
+    
+    def finger(self, username):
         
-        return xrd_response
-
-#
-# methods to parse finger response
-#
+        hm = self.hostmeta()
+        hm_hosts = self._hm_hosts(hm)
         
-def _link(resource, rel, type_=None):
-    for link in resource.links:
-        if link.rel == rel and (type_ is None or link.type == type_):
-            return link.href
+        if self._host not in hm_hosts:
+            raise WebFingerExpection("hostmeta host did not match account host")
+                
+        template = hm.find_link(WEBFINGER_TYPES, attr='template')
+        xrd_url = template.replace('{uri}',
+                    urllib.quote_plus('acct:%s@%s' % (username, self._host)))
+                    
+        return WebFingerResponse(self.xrd(xrd_url))
 
-def service(resource):
-    return _link(resource, 'http://portablecontacts.net/spec/1.0')
+def finger(identifier, secure=False):
+    if identifier.startswith('acct:'):
+        (acct, identifier) = identifier.split(':', 1)
+    (username, host) = identifier.split('@')
+    client = WebFingerClient(host, secure)
+    return client.finger(username)
 
-def profile(resource):
-    return _link(resource, 'http://webfinger.net/rel/profile-page')
-
-def hcard(resource):
-    return _link(resource, 'http://microformats.org/profile/hcard')
-
-def openid(resource):
-    return _link(resource, 'http://specs.openid.net/auth/2.0/provider')
-
-def xfn(resource):
-    return _link(resource, 'http://gmpg.org/xfn/11')
-
-def avatar(resource):
-    return _link(resource, 'http://webfinger.net/rel/avatar')
-
+# example main method
 
 if __name__ == '__main__':
     import sys
-    res = finger(sys.argv[1])
-    print "Profile:", profile(res)
-    print "HCard:  ", hcard(res)
-    print "XFN:    ", xfn(res)
-    print "OpenID: ", openid(res)
-    print "Avatar: ", avatar(res)
+    wf = finger(sys.argv[1], True)
+    print "Avatar: ", wf.avatar
+    print "HCard:  ", wf.hcard
+    print "OpenID: ", wf.open_id
+    print "Profile:", wf.profile
+    print "XFN:    ", wf.find_link('http://gmpg.org/xfn/11', attr='href')
