@@ -1,5 +1,4 @@
 from xrd import XRD
-import re
 import urllib, urllib2
 
 RELS = {
