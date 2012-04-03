@@ -17,7 +17,7 @@ WEBFINGER_TYPES = (
     'http://webfinger.info/rel/service',    # deprecated on 09/17/2009
 )
 
-class WebFingerExpection(Exception):
+class WebFingerException(Exception):
     pass
 
 class WebFingerResponse(object):
@@ -62,7 +62,7 @@ class WebFingerClient(object):
         hm_hosts = self._hm_hosts(hm)
 
         if self._host not in hm_hosts:
-            raise WebFingerExpection("hostmeta host did not match account host")
+            raise WebFingerException("hostmeta host did not match account host")
 
         template = hm.find_link(WEBFINGER_TYPES, attr='template')
         if not template.startswith('https://'):
