@@ -19,6 +19,11 @@ WEBFINGER_TYPES = (
     'http://webfinger.info/rel/service',    # deprecated on 09/17/2009
 )
 
+UNOFFICIAL_ENDPOINTS = {
+    'facebook.com': 'twitter-webfinger.appspot.com',
+    'twitter.com': 'twitter-webfinger.appspot.com',
+}
+
 class WebFingerException(Exception):
     pass
 
@@ -43,7 +48,10 @@ class WebFingerClient(object):
         self._timeout = timeout
 
     def _hm_hosts(self, xrd):
-        return [e.value for e in xrd.elements if e.name == 'hm:Host']
+        hosts = [e.value for e in xrd.elements if e.name == 'hm:Host']
+        if hosts and self._host in UNOFFICIAL_ENDPOINTS:
+            hosts.append(UNOFFICIAL_ENDPOINTS[self._host])
+        return hosts
 
     def xrd(self, url, raw=False):
         conn = self._opener.open(url, timeout=self._timeout)
@@ -52,7 +60,8 @@ class WebFingerClient(object):
         return response if raw else XRD.parse(response)
 
     def hostmeta(self, protocol):
-        hostmeta_url = "%s://%s/.well-known/host-meta" % (protocol, self._host)
+        host = UNOFFICIAL_ENDPOINTS.get(self._host, self._host)
+        hostmeta_url = "%s://%s/.well-known/host-meta" % (protocol, host)
         return self.xrd(hostmeta_url)
 
     def finger(self, username):
@@ -65,7 +74,7 @@ class WebFingerClient(object):
 
         hm_hosts = self._hm_hosts(hm)
 
-        if self._host not in hm_hosts:
+        if hm_hosts and self._host not in hm_hosts:
             raise WebFingerException("hostmeta host did not match account host")
 
         template = hm.find_link(WEBFINGER_TYPES, attr='template')
