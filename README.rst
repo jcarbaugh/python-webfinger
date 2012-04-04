@@ -15,13 +15,15 @@ Example::
 
 The following relation types are supported:
 
+* activity_streams: http://activitystrea.ms/spec/1.0
 * avatar: http://webfinger.net/rel/avatar
 * hcard: http://microformats.org/profile/hcard
 * open_id: http://specs.openid.net/auth/2.0/provider
+* opensocial: http://ns.opensocial.org/2008/opensocial/activitystreams
 * portable_contacts: http://portablecontacts.net/spec/1.0
 * profile: http://webfinger.net/rel/profile-page
 * xfn: http://gmpg.org/xfn/11
-
+    
 Other relation types can be accessed directly from the XRD document.::
 
 	print wf.find_link('http://example.com/example/spec', attr='href')
@@ -30,7 +32,6 @@ Dependencies
 ============
 
 * `python-xrd <http://github.com/jcarbaugh/python-xrd>`_
-* iso8601 (required by python-xrd)
 
 License
 =======
