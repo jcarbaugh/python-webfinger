@@ -1,4 +1,3 @@
-from xrd import XRD
 import urllib, urllib2
 
 __version__ = '0.1'
@@ -57,9 +56,13 @@ class WebFingerClient(object):
         return hosts
 
     def xrd(self, url, raw=False):
+
+        from xrd import XRD
+
         conn = self._opener.open(url, timeout=self._timeout)
         response = conn.read()
         conn.close()
+        
         return response if raw else XRD.parse(response)
 
     def hostmeta(self, protocol):
