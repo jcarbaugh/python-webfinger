@@ -20,7 +20,7 @@ WEBFINGER_TYPES = (
 )
 
 UNOFFICIAL_ENDPOINTS = {
-    'facebook.com': 'twitter-webfinger.appspot.com',
+    'facebook.com': 'facebook-webfinger.appspot.com',
     'twitter.com': 'twitter-webfinger.appspot.com',
 }
 
