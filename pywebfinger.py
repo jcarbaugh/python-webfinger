@@ -2,9 +2,11 @@ from xrd import XRD
 import urllib, urllib2
 
 RELS = {
+    'activity_streams': 'http://activitystrea.ms/spec/1.0',
     'avatar': 'http://webfinger.net/rel/avatar',
     'hcard': 'http://microformats.org/profile/hcard',
     'open_id': 'http://specs.openid.net/auth/2.0/provider',
+    'opensocial': 'http://ns.opensocial.org/2008/opensocial/activitystreams',
     'portable_contacts': 'http://portablecontacts.net/spec/1.0',
     'profile': 'http://webfinger.net/rel/profile-page',
     'xfn': 'http://gmpg.org/xfn/11',
@@ -87,10 +89,13 @@ def finger(identifier, timeout=None):
 if __name__ == '__main__':
     import sys
     wf = finger(sys.argv[1])
-    print "Avatar: ", wf.avatar
-    print "HCard:  ", wf.hcard
-    print "OpenID: ", wf.open_id
-    print "Profile:", wf.profile
-    print "XFN:    ", wf.find_link('http://gmpg.org/xfn/11', attr='href')
+    print "Activity Streams:  ", wf.activity_streams
+    print "Avatar:            ", wf.avatar
+    print "HCard:             ", wf.hcard
+    print "OpenID:            ", wf.open_id
+    print "Open Social:       ", wf.opensocial
+    print "Profile:           ", wf.profile
+    print "Portable Contacts: ", wf.portable_contacts
+    print "XFN:               ", wf.find_link('http://gmpg.org/xfn/11', attr='href')
     if wf.insecure:
         print "Warning: Data was retrieved over an insecure connection"
