@@ -33,16 +33,18 @@ class WebFingerResponse(object):
 
 class WebFingerClient(object):
 
-    def __init__(self, host):
+    def __init__(self, host, timeout=None):
         self._host = host
         self._opener = urllib2.build_opener(urllib2.HTTPRedirectHandler())
         self._opener.addheaders = [('User-agent', 'python-webfinger')]
+
+        self._timeout = timeout
 
     def _hm_hosts(self, xrd):
         return [e.value for e in xrd.elements if e.name == 'hm:Host']
 
     def xrd(self, url, raw=False):
-        conn = self._opener.open(url)
+        conn = self._opener.open(url, timeout=self._timeout)
         response = conn.read()
         conn.close()
         return response if raw else XRD.parse(response)
@@ -73,11 +75,11 @@ class WebFingerClient(object):
         data = self.xrd(xrd_url)
         return WebFingerResponse(data, insecure)
 
-def finger(identifier):
+def finger(identifier, timeout=None):
     if identifier.startswith('acct:'):
         (acct, identifier) = identifier.split(':', 1)
     (username, host) = identifier.split('@')
-    client = WebFingerClient(host)
+    client = WebFingerClient(host, timeout=timeout)
     return client.finger(username)
 
 # example main method
