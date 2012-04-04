@@ -1,6 +1,8 @@
 from xrd import XRD
 import urllib, urllib2
 
+__version__ = '0.1'
+
 RELS = {
     'activity_streams': 'http://activitystrea.ms/spec/1.0',
     'avatar': 'http://webfinger.net/rel/avatar',
@@ -97,11 +99,19 @@ def finger(identifier, timeout=None, official=False):
     client = WebFingerClient(host, timeout=timeout, official=official)
     return client.finger(username)
 
-# example main method
-
 if __name__ == '__main__':
+
+    # example usage
+
     import sys
-    wf = finger(sys.argv[1])
+
+    try:
+        acct = sys.argv[1]
+    except IndexError:
+        acct = "jcarbaugh@twitter.com"
+
+    wf = finger(acct)
+
     print "Activity Streams:  ", wf.activity_streams
     print "Avatar:            ", wf.avatar
     print "HCard:             ", wf.hcard
@@ -110,5 +120,6 @@ if __name__ == '__main__':
     print "Profile:           ", wf.profile
     print "Portable Contacts: ", wf.portable_contacts
     print "XFN:               ", wf.find_link('http://gmpg.org/xfn/11', attr='href')
+
     if wf.insecure:
-        print "Warning: Data was retrieved over an insecure connection"
+        print "*** Warning: Data was retrieved over an insecure connection"
