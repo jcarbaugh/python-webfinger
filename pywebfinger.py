@@ -40,8 +40,9 @@ class WebFingerResponse(object):
 
 class WebFingerClient(object):
 
-    def __init__(self, host, timeout=None):
+    def __init__(self, host, timeout=None, official=False):
         self._host = host
+        self._official = official
         self._opener = urllib2.build_opener(urllib2.HTTPRedirectHandler())
         self._opener.addheaders = [('User-agent', 'python-webfinger')]
 
@@ -49,7 +50,7 @@ class WebFingerClient(object):
 
     def _hm_hosts(self, xrd):
         hosts = [e.value for e in xrd.elements if e.name == 'hm:Host']
-        if hosts and self._host in UNOFFICIAL_ENDPOINTS:
+        if not self._official and hosts and self._host in UNOFFICIAL_ENDPOINTS:
             hosts.append(UNOFFICIAL_ENDPOINTS[self._host])
         return hosts
 
@@ -60,7 +61,10 @@ class WebFingerClient(object):
         return response if raw else XRD.parse(response)
 
     def hostmeta(self, protocol):
-        host = UNOFFICIAL_ENDPOINTS.get(self._host, self._host)
+        if not self._official and self._host in UNOFFICIAL_ENDPOINTS:
+            host = UNOFFICIAL_ENDPOINTS[self._host]
+        else:
+            host = self._host
         hostmeta_url = "%s://%s/.well-known/host-meta" % (protocol, host)
         return self.xrd(hostmeta_url)
 
@@ -86,11 +90,11 @@ class WebFingerClient(object):
         data = self.xrd(xrd_url)
         return WebFingerResponse(data, insecure)
 
-def finger(identifier, timeout=None):
+def finger(identifier, timeout=None, official=False):
     if identifier.startswith('acct:'):
         (acct, identifier) = identifier.split(':', 1)
     (username, host) = identifier.split('@')
-    client = WebFingerClient(host, timeout=timeout)
+    client = WebFingerClient(host, timeout=timeout, official=official)
     return client.finger(username)
 
 # example main method
