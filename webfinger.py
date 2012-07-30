@@ -1,6 +1,7 @@
-import urllib, urllib2
+import urllib
+import urllib2
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 RELS = {
     'activity_streams': 'http://activitystrea.ms/spec/1.0',
@@ -25,8 +26,10 @@ UNOFFICIAL_ENDPOINTS = {
     'twitter.com': 'twitter-webfinger.appspot.com',
 }
 
+
 class WebFingerException(Exception):
     pass
+
 
 class WebFingerResponse(object):
 
@@ -39,13 +42,14 @@ class WebFingerResponse(object):
             return self._xrd.find_link(RELS[name], attr='href')
         return getattr(self._xrd, name)
 
+
 class WebFingerClient(object):
 
     def __init__(self, host, timeout=None, official=False):
         self._host = host
         self._official = official
         self._opener = urllib2.build_opener(urllib2.HTTPRedirectHandler())
-        self._opener.addheaders = [('User-agent', 'python-webfinger')]
+        self._opener.addheaders = [('User-agent', 'github.com/jcarbaugh/webfinger')]
 
         self._timeout = timeout
 
@@ -62,7 +66,7 @@ class WebFingerClient(object):
         conn = self._opener.open(url, timeout=self._timeout)
         response = conn.read()
         conn.close()
-        
+
         return response if raw else XRD.parse(response)
 
     def hostmeta(self, protocol):
@@ -95,12 +99,14 @@ class WebFingerClient(object):
         data = self.xrd(xrd_url)
         return WebFingerResponse(data, insecure)
 
+
 def finger(identifier, timeout=None, official=False):
     if identifier.startswith('acct:'):
         (acct, identifier) = identifier.split(':', 1)
     (username, host) = identifier.split('@')
     client = WebFingerClient(host, timeout=timeout, official=official)
     return client.finger(username)
+
 
 if __name__ == '__main__':
 

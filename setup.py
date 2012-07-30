@@ -1,16 +1,16 @@
 from distutils.core import setup
-from pywebfinger import __version__
+from webfinger import __version__
 
 long_description = open('README.rst').read()
 
-setup(name="python-webfinger",
+setup(name="webfinger",
     version=str(__version__),
-    py_modules=["pywebfinger"],
+    py_modules=["webfinger"],
     description="Simple Python implementation of webfinger client protocol",
     author="Jeremy Carbaugh",
-    author_email = "jcarbaugh@gmail.com",
+    author_email="jcarbaugh@gmail.com",
     license='BSD',
-    url="http://github.com/jcarbaugh/python-webfinger/",
+    url="http://github.com/jcarbaugh/webfinger/",
     long_description=long_description,
     install_requires=["python-xrd"],
     platforms=["any"],
