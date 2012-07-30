@@ -49,7 +49,7 @@ class WebFingerClient(object):
         self._host = host
         self._official = official
         self._opener = urllib2.build_opener(urllib2.HTTPRedirectHandler())
-        self._opener.addheaders = [('User-agent', 'github.com/jcarbaugh/webfinger')]
+        self._opener.addheaders = [('User-agent', 'python-webfinger')]
 
         self._timeout = timeout
 
