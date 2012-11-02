@@ -59,7 +59,7 @@ class WebFingerClient(object):
         self._official = official
         self._session = requests.session(
             timeout=timeout,
-            headers={'User-Agent': 'python-webfinger'})
+            headers={'User-Agent': 'python-webfinger/%s' % __version__})
 
     def rd(self, url, raw=False):
         """ Load resource at given URL and attempt to parse either XRD or JRD
