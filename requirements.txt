@@ -1,1 +1,2 @@
-python-xrd==0.1
+rd==0.1
+requests==0.14.2
