@@ -84,14 +84,14 @@ class WebFingerClient(object):
             host = self._host
 
         # create full host-meta URL
-        hostmeta_url = "%s://%s/.well-known/host-meta" % (protocol, host)
+        url = "%s://%s/.well-known/host-meta" % (protocol, host)
 
         # attempt to load from host-meta.json resource
-        resp = self._session.get("%s.json" % hostmeta_url)
+        resp = self._session.get("%s.json" % url)
 
         if resp.status_code == 404:
             # on failure, load from RFC 6415 host-meta resource
-            resp = self._session.get(hostmeta_url, headers={"Accept": "application/json"})          # fall back to XRD
+            resp = self._session.get(url, headers={"Accept": "application/json"})          # fall back to XRD
 
         if resp.status_code != 200:
             # raise error if request was not successful
@@ -119,10 +119,10 @@ class WebFingerClient(object):
         template = hm.find_link(WEBFINGER_TYPES, attr='template')
         secure = template.startswith('https://')
 
-        rd_url = template.replace('{uri}',
+        url = template.replace('{uri}',
                     urllib.quote_plus('acct:%s@%s' % (username, self._host)))
 
-        data = self.rd(rd_url)
+        data = self.rd(url)
         return WebFingerResponse(data, secure)
 
 
