@@ -62,12 +62,6 @@ class WebFingerClient(object):
             timeout=timeout,
             headers={'User-Agent': 'python-webfinger'})
 
-    def _hm_hosts(self, rd):
-        hosts = [e.value for e in rd.elements if e.name == 'hm:Host']
-        if not self._official and hosts and self._host in UNOFFICIAL_ENDPOINTS:
-            hosts.append(UNOFFICIAL_ENDPOINTS[self._host])
-        return hosts
-
     def rd(self, url, raw=False):
 
         resp = self._session.get(url)
@@ -111,11 +105,6 @@ class WebFingerClient(object):
         except (requests.RequestException, requests.HTTPError):
             hm = self.hostmeta(secure=False)
             secure = False
-
-        hm_hosts = self._hm_hosts(hm)
-
-        if hm_hosts and self._host not in hm_hosts:
-            raise WebFingerException("hostmeta host did not match account host")
 
         template = hm.find_link(WEBFINGER_TYPES, attr='template')
 
