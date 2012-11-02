@@ -70,12 +70,19 @@ class WebFingerClient(object):
         content = resp.content
         return content if raw else rd.loads(content, resp.headers.get('Content-Type'))
 
-    def hostmeta(self, secure=True):
+    def hostmeta(self, resource=None, rel=None, secure=True, raw=False):
         """ Load host-meta resource from WebFinger provider.
             Defaults to a secure (SSL) connection unless secure=False.
         """
 
         protocol = "https" if secure else "http"
+
+        # create querystring params
+        params = {}
+        if resource:
+            params['resource'] = resource
+        if rel:
+            params['rel'] = rel
 
         # use unofficial endpoint, if enabled
         if not self._official and self._host in UNOFFICIAL_ENDPOINTS:
@@ -87,20 +94,20 @@ class WebFingerClient(object):
         url = "%s://%s/.well-known/host-meta" % (protocol, host)
 
         # attempt to load from host-meta.json resource
-        resp = self._session.get("%s.json" % url)
-
+        resp = self._session.get("%s.json" % url, params=params)
         if resp.status_code == 404:
             # on failure, load from RFC 6415 host-meta resource
-            resp = self._session.get(url, headers={"Accept": "application/json"})          # fall back to XRD
+            resp = self._session.get(url, params=params, headers={"Accept": "application/json"})
 
         if resp.status_code != 200:
             # raise error if request was not successful
             raise WebFingerException("host-meta not found")
 
         # load XRD or JRD based on HTTP response Content-Type header
-        return rd.loads(resp.content, resp.headers.get('Content-Type'))
+        content = resp.content
+        return content if raw else rd.loads(content, resp.headers.get('Content-Type'))
 
-    def finger(self, username, rel=None):
+    def finger(self, username, resource=None, rel=None):
         """ Perform a WebFinger query based on the given username.
             The `rel` parameter, if specified, will be passed to the provider,
             but be aware that providers are not required to implement the
@@ -108,25 +115,36 @@ class WebFingerClient(object):
         """
 
         try:
-            hm = self.hostmeta()               # attempt SSL host-meta retrieval
+            # attempt SSL host-meta retrieval
+            hm = self.hostmeta(resource=resource, rel=rel)
+            secure = True
         except (requests.RequestException, requests.HTTPError):
-            hm = self.hostmeta(secure=False)   # on failure, attempt non-SSL
+            # on failure, attempt non-SSL
+            hm = self.hostmeta(resource=resource, rel=rel, secure=False)
+            secure = False
 
         if hm is None:
             raise WebFingerException("Unable to load or parse host-meta")
 
-        # find template for LRDD document
-        template = hm.find_link(WEBFINGER_TYPES, attr='template')
-        secure = template.startswith('https://')
+        if resource and hm.subject == resource:
 
-        url = template.replace('{uri}',
-                    urllib.quote_plus('acct:%s@%s' % (username, self._host)))
+            # resource query worked, return LRDD response
+            return WebFingerResponse(hm, secure)
 
-        data = self.rd(url)
-        return WebFingerResponse(data, secure)
+        else:
+
+            # find template for LRDD document
+            template = hm.find_link(WEBFINGER_TYPES, attr='template')
+            secure = template.startswith('https://')
+
+            url = template.replace('{uri}',
+                        urllib.quote_plus('acct:%s@%s' % (username, self._host)))
+
+            lrdd = self.rd(url)
+            return WebFingerResponse(lrdd, secure)
 
 
-def finger(identifier, rel=None, timeout=None, official=False):
+def finger(identifier, resource=None, rel=None, timeout=None, official=False):
     """ Shortcut method for invoking WebFingerClient.
     """
 
@@ -136,7 +154,7 @@ def finger(identifier, rel=None, timeout=None, official=False):
     (username, host) = identifier.split('@')
 
     client = WebFingerClient(host, timeout=timeout, official=official)
-    return client.finger(username, rel=rel)
+    return client.finger(username, resource=resource, rel=rel)
 
 
 if __name__ == '__main__':
