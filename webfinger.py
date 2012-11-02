@@ -4,7 +4,7 @@ import requests
 
 import rd
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 RELS = {
     'activity_streams': 'http://activitystrea.ms/spec/1.0',
