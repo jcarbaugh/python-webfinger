@@ -55,8 +55,7 @@ class WebFingerResponse(object):
 
 class WebFingerClient(object):
 
-    def __init__(self, host, timeout=None, official=False):
-        self._host = host
+    def __init__(self, timeout=None, official=False):
         self._official = official
         self._session = requests.session(
             timeout=timeout,
@@ -70,7 +69,7 @@ class WebFingerClient(object):
         content = resp.content
         return content if raw else rd.loads(content, resp.headers.get('Content-Type'))
 
-    def hostmeta(self, resource=None, rel=None, secure=True, raw=False):
+    def hostmeta(self, host, resource=None, rel=None, secure=True, raw=False):
         """ Load host-meta resource from WebFinger provider.
             Defaults to a secure (SSL) connection unless secure=False.
         """
@@ -85,10 +84,8 @@ class WebFingerClient(object):
             params['rel'] = rel
 
         # use unofficial endpoint, if enabled
-        if not self._official and self._host in UNOFFICIAL_ENDPOINTS:
-            host = UNOFFICIAL_ENDPOINTS[self._host]
-        else:
-            host = self._host
+        if not self._official and host in UNOFFICIAL_ENDPOINTS:
+            host = UNOFFICIAL_ENDPOINTS[host]
 
         # create full host-meta URL
         url = "%s://%s/.well-known/host-meta" % (protocol, host)
@@ -114,13 +111,15 @@ class WebFingerClient(object):
             rel filter.
         """
 
+        host = subject.split("@")[-1]
+
         try:
             # attempt SSL host-meta retrieval
-            hm = self.hostmeta(resource=resource, rel=rel)
+            hm = self.hostmeta(host, resource=resource, rel=rel)
             secure = True
         except (requests.RequestException, requests.HTTPError):
             # on failure, attempt non-SSL
-            hm = self.hostmeta(resource=resource, rel=rel, secure=False)
+            hm = self.hostmeta(host, resource=resource, rel=rel, secure=False)
             secure = False
 
         if hm is None:
@@ -150,9 +149,7 @@ def finger(subject, resource=None, rel=None, timeout=None, official=False):
     if ":" not in subject:
         raise WebFingerException("scheme is required in subject URI")
 
-    (identifier, host) = subject.split('@')
-
-    client = WebFingerClient(host, timeout=timeout, official=official)
+    client = WebFingerClient(timeout=timeout, official=official)
     return client.finger(subject, resource=resource, rel=rel)
 
 
