@@ -107,8 +107,8 @@ class WebFingerClient(object):
         content = resp.content
         return content if raw else rd.loads(content, resp.headers.get('Content-Type'))
 
-    def finger(self, username, resource=None, rel=None):
-        """ Perform a WebFinger query based on the given username.
+    def finger(self, subject, resource=None, rel=None):
+        """ Perform a WebFinger query based on the given subject.
             The `rel` parameter, if specified, will be passed to the provider,
             but be aware that providers are not required to implement the
             rel filter.
@@ -137,24 +137,23 @@ class WebFingerClient(object):
             template = hm.find_link(WEBFINGER_TYPES, attr='template')
             secure = template.startswith('https://')
 
-            url = template.replace('{uri}',
-                        urllib.quote_plus('acct:%s@%s' % (username, self._host)))
+            url = template.replace('{uri}', urllib.quote_plus(subject))
 
             lrdd = self.rd(url)
             return WebFingerResponse(lrdd, secure)
 
 
-def finger(identifier, resource=None, rel=None, timeout=None, official=False):
+def finger(subject, resource=None, rel=None, timeout=None, official=False):
     """ Shortcut method for invoking WebFingerClient.
     """
 
-    if ":" in identifier:
-        (scheme, identifier) = identifier.split(':', 1)
+    if ":" not in subject:
+        raise WebFingerException("scheme is required in subject URI")
 
-    (username, host) = identifier.split('@')
+    (identifier, host) = subject.split('@')
 
     client = WebFingerClient(host, timeout=timeout, official=official)
-    return client.finger(username, resource=resource, rel=rel)
+    return client.finger(subject, resource=resource, rel=rel)
 
 
 if __name__ == '__main__':
