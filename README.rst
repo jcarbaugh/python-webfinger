@@ -31,7 +31,7 @@ Other relation types can be accessed directly from the XRD document.::
 Dependencies
 ============
 
-* `python-xrd <http://github.com/jcarbaugh/python-xrd>`_
+* `python-rd <http://github.com/jcarbaugh/python-rd>`_
 
 License
 =======
