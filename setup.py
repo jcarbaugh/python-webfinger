@@ -12,7 +12,7 @@ setup(name="webfinger",
     license='BSD',
     url="http://github.com/jcarbaugh/python-webfinger/",
     long_description=long_description,
-    install_requires=["python-xrd"],
+    install_requires=["python-rd"],
     platforms=["any"],
     classifiers=[
         "Development Status :: 4 - Beta",
