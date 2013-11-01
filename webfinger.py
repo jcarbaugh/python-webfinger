@@ -11,6 +11,7 @@ RELS = {
     'opensocial': 'http://ns.opensocial.org/2008/opensocial/activitystreams',
     'portable_contacts': 'http://portablecontacts.net/spec/1.0',
     'profile': 'http://webfinger.net/rel/profile-page',
+    'webfist': 'http://webfist.org/spec/rel',
     'xfn': 'http://gmpg.org/xfn/11',
 }
 
@@ -97,8 +98,8 @@ class WebFingerClient(object):
 
         logging.debug('response content type: %s' % content_type)
 
-        if content_type != WEBFINGER_TYPE:
-            raise WebFingerException('Invalid response type from server')
+        # if content_type != WEBFINGER_TYPE:
+        #     raise WebFingerException('Invalid response type from server')
 
         if raw:
             return content
@@ -112,6 +113,12 @@ class WebFingerClient(object):
             rel filter.
         """
         host = resource.split("@")[-1]
+
+        if host in UNOFFICIAL_ENDPOINTS and not self.official:
+            unofficial_host = UNOFFICIAL_ENDPOINTS[host]
+            logging.debug('host %s is not supported, using unofficial endpoint %s' % (host, unofficial_host))
+            host = unofficial_host
+
         jrd = self.jrd(host, resource, rel)
         return WebFingerResponse(jrd)
 
@@ -161,4 +168,5 @@ if __name__ == '__main__':
         print "Open Social:       ", wf.opensocial
         print "Portable Contacts: ", wf.portable_contacts
         print "Profile:           ", wf.profile
+        print "WebFist:           ", wf.webfist
         print "XFN:               ", wf.rel("http://gmpg.org/xfn/11")
