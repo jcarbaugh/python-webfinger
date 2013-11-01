@@ -16,6 +16,7 @@ RELS = {
 }
 
 WEBFINGER_TYPE = 'application/jrd+json'
+LEGACY_WEBFINGER_TYPES = ['application/json']
 
 UNOFFICIAL_ENDPOINTS = {
     'facebook.com': 'facebook-webfinger.appspot.com',
@@ -94,12 +95,12 @@ class WebFingerClient(object):
         logging.debug('fetching JRD from %s' % resp.url)
 
         content = resp.content
-        content_type = resp.headers.get('Content-Type')
+        content_type = resp.headers.get('Content-Type', '').split(';', 1)[0].strip()
 
         logging.debug('response content type: %s' % content_type)
 
-        # if content_type != WEBFINGER_TYPE:
-        #     raise WebFingerException('Invalid response type from server')
+        if content_type != WEBFINGER_TYPE and content_type not in LEGACY_WEBFINGER_TYPES:
+            raise WebFingerException('Invalid response type from server')
 
         if raw:
             return content
