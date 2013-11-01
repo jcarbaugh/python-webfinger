@@ -1,10 +1,7 @@
 import logging
-import urllib
 import requests
 
-import rd
-
-__version__ = '0.3'
+__version__ = '1.0'
 
 RELS = {
     'activity_streams': 'http://activitystrea.ms/spec/1.0',
@@ -17,12 +14,7 @@ RELS = {
     'xfn': 'http://gmpg.org/xfn/11',
 }
 
-WEBFINGER_TYPES = (
-    'lrdd',                                 # current
-    'http://lrdd.net/rel/descriptor',       # deprecated on 12/11/2009
-    'http://webfinger.net/rel/acct-desc',   # deprecated on 11/26/2009
-    'http://webfinger.info/rel/service',    # deprecated on 09/17/2009
-)
+WEBFINGER_TYPE = 'application/jrd+json'
 
 UNOFFICIAL_ENDPOINTS = {
     'facebook.com': 'facebook-webfinger.appspot.com',
@@ -37,120 +29,102 @@ class WebFingerException(Exception):
 
 
 class WebFingerResponse(object):
-    """ Response that wraps an RD object. This class provides a `secure`
-        parameter to indicate whether the response was returned via HTTP or
-        HTTPS. It also provides attribute-style access to links for specific
-        rels, responding with the href attribute of the matched element.
+    """ Response that wraps an RD object. It provides attribute-style access
+        to links for specific rels, responding with the href attribute
+        of the matched element.
     """
 
-    def __init__(self, rd, secure=False):
-        self.secure = secure
-        self.rd = rd
+    def __init__(self, jrd):
+        self.jrd = jrd
 
     def __getattr__(self, name):
         if name in RELS:
-            return self.rd.find_link(RELS[name], attr='href')
-        return getattr(self.rd, name)
+            return self.rel(RELS[name])
+        return getattr(self.jrd, name)
+
+    @property
+    def subject(self):
+        return self.jrd.get('subject')
+
+    @property
+    def aliases(self):
+        return self.jrd.get('aliases')
+
+    @property
+    def properties(self):
+        return self.jrd.get('properties')
+
+    @property
+    def links(self):
+        return self.jrd.get('links')
+
+    def rel(self, relation, attr='href'):
+        links = self.links
+        if links:
+            for link in links:
+                if link.get('rel') == relation:
+                    return link.get(attr)
 
 
 class WebFingerClient(object):
 
     def __init__(self, timeout=None, official=False):
-        self._official = official
-        self._session = requests.session(
-            timeout=timeout,
-            headers={'User-Agent': 'python-webfinger/%s' % __version__})
+        self.official = official
+        self.timeout = timeout
 
-    def rd(self, url, raw=False):
+    def jrd(self, host, resource, rel, raw=False):
         """ Load resource at given URL and attempt to parse either XRD or JRD
             based on HTTP response Content-Type header.
         """
-        resp = self._session.get(url)
-        content = resp.content
-        return content if raw else rd.loads(content, resp.headers.get('Content-Type'))
 
-    def hostmeta(self, host, resource=None, rel=None, secure=True, raw=False):
-        """ Load host-meta resource from WebFinger provider.
-            Defaults to a secure (SSL) connection unless secure=False.
-        """
+        url = "https://%s/.well-known/webfinger" % host
 
-        protocol = "https" if secure else "http"
+        headers = {
+            'User-Agent': 'python-webfinger/%s' % __version__,
+            'Accept': WEBFINGER_TYPE,
+        }
 
-        # create querystring params
-        params = {}
-        if resource:
-            params['resource'] = resource
+        params = {'resource': resource}
         if rel:
             params['rel'] = rel
 
-        # use unofficial endpoint, if enabled
-        if not self._official and host in UNOFFICIAL_ENDPOINTS:
-            host = UNOFFICIAL_ENDPOINTS[host]
+        resp = requests.get(url, params=params, headers=headers, timeout=self.timeout, verify=True)
 
-        # create full host-meta URL
-        url = "%s://%s/.well-known/host-meta" % (protocol, host)
+        logging.debug('fetching JRD from %s' % resp.url)
 
-        # attempt to load from host-meta.json resource
-        resp = self._session.get("%s.json" % url, params=params)
-        if resp.status_code == 404:
-            # on failure, load from RFC 6415 host-meta resource
-            resp = self._session.get(url, params=params, headers={"Accept": "application/json"})
-
-        if resp.status_code != 200:
-            # raise error if request was not successful
-            raise WebFingerException("host-meta not found")
-
-        # load XRD or JRD based on HTTP response Content-Type header
         content = resp.content
-        return content if raw else rd.loads(content, resp.headers.get('Content-Type'))
+        content_type = resp.headers.get('Content-Type')
 
-    def finger(self, subject, resource=None, rel=None):
+        logging.debug('response content type: %s' % content_type)
+
+        if content_type != WEBFINGER_TYPE:
+            raise WebFingerException('Invalid response type from server')
+
+        if raw:
+            return content
+
+        return resp.json()
+
+    def finger(self, resource, rel=None):
         """ Perform a WebFinger query based on the given subject.
             The `rel` parameter, if specified, will be passed to the provider,
             but be aware that providers are not required to implement the
             rel filter.
         """
-
-        host = subject.split("@")[-1]
-
-        try:
-            # attempt SSL host-meta retrieval
-            hm = self.hostmeta(host, resource=resource, rel=rel)
-            secure = True
-        except (requests.RequestException, requests.HTTPError):
-            # on failure, attempt non-SSL
-            hm = self.hostmeta(host, resource=resource, rel=rel, secure=False)
-            secure = False
-
-        if hm is None:
-            raise WebFingerException("Unable to load or parse host-meta")
-
-        if resource and hm.subject == resource:
-
-            # resource query worked, return LRDD response
-            return WebFingerResponse(hm, secure)
-
-        else:
-
-            # find template for LRDD document
-            template = hm.find_link(WEBFINGER_TYPES, attr='template')
-            secure = template.startswith('https://')
-
-            url = template.replace('{uri}', urllib.quote_plus(subject))
-
-            lrdd = self.rd(url)
-            return WebFingerResponse(lrdd, secure)
+        host = resource.split("@")[-1]
+        jrd = self.jrd(host, resource, rel)
+        return WebFingerResponse(jrd)
 
 
-def finger(subject, resource=None, rel=None, timeout=None, official=False):
+def finger(resource, rel=None, timeout=None, official=False):
     """ Shortcut method for invoking WebFingerClient.
     """
 
-    if ":" not in subject:
+    if ":" not in resource:
         raise WebFingerException("scheme is required in subject URI")
 
     client = WebFingerClient(timeout=timeout, official=official)
-    return client.finger(subject, resource=resource, rel=rel)
+    return client.finger(resource, rel=rel)
 
 
 if __name__ == '__main__':
@@ -187,7 +161,4 @@ if __name__ == '__main__':
         print "Open Social:       ", wf.opensocial
         print "Portable Contacts: ", wf.portable_contacts
         print "Profile:           ", wf.profile
-        print "XFN:               ", wf.find_link("http://gmpg.org/xfn/11", attr="href")
-
-    if not wf.secure:
-        print "\n*** Warning: Data was retrieved over an insecure connection"
+        print "XFN:               ", wf.rel("http://gmpg.org/xfn/11")
