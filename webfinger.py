@@ -63,7 +63,9 @@ class WebFingerResponse(object):
     def rel(self, relation, attr='href'):
         for link in self.links:
             if link.get('rel') == relation:
-                return link.get(attr)
+                if attr:
+                    return link.get(attr)
+                return link
 
 
 class WebFingerClient(object):
@@ -72,11 +74,21 @@ class WebFingerClient(object):
         self.official = official
         self.timeout = timeout
 
-    def jrd(self, host, resource, rel, raw=False):
-        """ Load resource at given URL and attempt to parse either XRD or JRD
-            based on HTTP response Content-Type header. The rel parameter
-            may be a single value or a list.
-        """
+    def _parse_host(self, resource):
+
+        host = resource.split("@")[-1]
+
+        if host in UNOFFICIAL_ENDPOINTS and not self.official:
+            unofficial_host = UNOFFICIAL_ENDPOINTS[host]
+            logging.debug('host %s is not supported, using unofficial endpoint %s' % (host, unofficial_host))
+            host = unofficial_host
+
+        return host
+
+    def finger(self, resource, host=None, rel=None, raw=False):
+
+        if not host:
+            host = self._parse_host(resource)
 
         url = "https://%s/.well-known/webfinger" % host
 
@@ -99,36 +111,15 @@ class WebFingerClient(object):
             raise WebFingerException('Invalid response type from server')
 
         if raw:
-            return resp.content
+            return resp.json()
 
-        return resp.json()
-
-    def finger(self, resource, rel=None):
-        """ Perform a WebFinger query based on the given subject.
-            The `rel` parameter, if specified, will be passed to the provider,
-            but be aware that providers are not required to implement the
-            rel filter.
-        """
-        host = resource.split("@")[-1]
-
-        if host in UNOFFICIAL_ENDPOINTS and not self.official:
-            unofficial_host = UNOFFICIAL_ENDPOINTS[host]
-            logging.debug('host %s is not supported, using unofficial endpoint %s' % (host, unofficial_host))
-            host = unofficial_host
-
-        jrd = self.jrd(host, resource, rel)
-        return WebFingerResponse(jrd)
+        return WebFingerResponse(resp.json())
 
 
-def finger(resource, rel=None, timeout=None, official=False):
-    """ Shortcut method for invoking WebFingerClient.
+def finger(resource, rel=None):
+    """ Convenience method for invoking WebFingerClient.
     """
-
-    if ":" not in resource:
-        raise WebFingerException("scheme is required in subject URI")
-
-    client = WebFingerClient(timeout=timeout, official=official)
-    return client.finger(resource, rel=rel)
+    return WebFingerClient().finger(resource, rel=rel)
 
 
 if __name__ == '__main__':
@@ -151,12 +142,12 @@ if __name__ == '__main__':
 
     if args.rel:
 
-        link = wf.find_link(args.rel)
+        link = wf.rel(args.rel)
 
         if link is None:
             print("*** Link not found for rel=%s" % args.rel)
 
-        print("%s:\n\t%s" % (link.rel, link.href))
+        print("%s:\n\t%s" % (args.rel, link))
 
     else:
 

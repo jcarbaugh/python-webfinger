@@ -23,21 +23,22 @@ WebFinger is a discovery protocol that allows you to find information about peop
 finger
 ======
 
-finger(resource, rel=None, timeout=None, official=False)
-    The *finger* method provides a simple way of instantiating a WebFingerClient object and making the request. The *resource* parameter is a URI of the resource about which you are querying. The optional *rel* parameter can be either a string or a list of strings that will limit the response to the specific relations. WebFinger servers are **not** required to obey the *rel* parameter, so you should handle the response accordingly. The optional *timeout* parameter can set a specific HTTP request timeout. The *official* parameter is a boolean that determines if the client will use `unofficial endpoints`_.
+finger(resource, rel=None)
+    *finger* is a convenience method for instantiating a WebFingerClient object and making the request. The *resource* parameter is a URI of the resource about which you are querying. The optional *rel* parameter can be either a string or a list of strings that will limit the response to the specific relations. WebFinger servers are **not** required to obey the *rel* parameter, so you should handle the response accordingly.
+
+    WebFingerClient supports additional options, so check that out if *finger* does not meet your needs.
 
 
 WebFinger Client
 ================
 
 WebFingerClient(timeout=None, official=False)
-    Instantiates a client object. *timeout* and *official* are the same as the parameters on the standalone *finger* method.
+    Instantiates a client object. The optional *timeout* parameter specifies the HTTP request timeout. The optional *official* parameter is a boolean that determines if the client will use `unofficial endpoints`_.
 
-finger(resource, rel=None)
-    The client *finger* method prepares and executes the WebFinger request. *resource* and *rel* are the same as the parameters on the standalone *finger* method. This method extracts the host from the *resource* parameter and invokes the *jrd* method.
+finger(resource, host=None, rel=None, raw=False)
+    The client *finger* method prepares and executes the WebFinger request. *resource* and *rel* are the same as the parameters on the standalone *finger* method. *host* should only be specified if you want to connect to a host other than the host in the resource parameter. Otherwise, this method extracts the host from the *resource* parameter. *raw* is a boolean that determines if the method returns a WebFingerResponse object or the raw JRD response as a dict.
 
-jrd(host, resource, rel, raw=False)
-    The *jrd* method is the core of the client object. It executes the HTTP request and creates the response object. *host* is a string of the host against which the request will be executed. *resource* and *rel* are the same as the parameters on the standalone *finger* method. *raw* is a boolean that determines if the method returns a WebFingerResponse object or the raw JRD response as a dict.
+    If the *host* parameter is passed to this method, unofficial endpoints are ignored. You're asking for a specific host so who am I to disagree?
 
 
 WebFinger Response
@@ -82,6 +83,8 @@ rel(relation, attr='href')
 
     >>> rel = 'http://webfinger.net/rel/avatar'
     >>> [l.get('href') for l in rel.links if l.get('rel') == rel]
+
+  If *attr* is None, the full dict for the link will be returned.
 
 
 
