@@ -1,3 +1,4 @@
+from __future__ import print_function
 import logging
 
 __version__ = '1.0'
