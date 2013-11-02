@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 from webfinger import __version__
 
 long_description = open('README.rst').read()
