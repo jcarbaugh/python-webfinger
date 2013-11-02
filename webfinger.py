@@ -61,11 +61,9 @@ class WebFingerResponse(object):
         return self.jrd.get('links', [])
 
     def rel(self, relation, attr='href'):
-        links = self.links
-        if links:
-            for link in links:
-                if link.get('rel') == relation:
-                    return link.get(attr)
+        for link in self.links:
+            if link.get('rel') == relation:
+                return link.get(attr)
 
 
 class WebFingerClient(object):
