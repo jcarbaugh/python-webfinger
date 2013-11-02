@@ -20,6 +20,14 @@ WebFinger is a discovery protocol that allows you to find information about peop
     Eric Mill
 
 
+Installation
+============
+
+Available on `PyPI as webfinger <https://pypi.python.org/pypi/webfinger>`_.
+
+  pip install webfinger
+
+
 finger
 ======
 
