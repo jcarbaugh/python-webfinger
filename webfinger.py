@@ -1,5 +1,4 @@
 import logging
-import requests
 
 __version__ = '1.0'
 
@@ -86,6 +85,8 @@ class WebFingerClient(object):
         return host
 
     def finger(self, resource, host=None, rel=None, raw=False):
+
+        import requests
 
         if not host:
             host = self._parse_host(resource)
