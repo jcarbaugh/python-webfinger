@@ -149,25 +149,25 @@ if __name__ == '__main__':
 
     wf = finger(args.acct, rel=args.rel)
 
-    print "--- %s ---" % wf.subject
+    print("--- %s ---" % wf.subject)
 
     if args.rel:
 
         link = wf.find_link(args.rel)
 
         if link is None:
-            print "*** Link not found for rel=%s" % args.rel
+            print("*** Link not found for rel=%s" % args.rel)
 
-        print "%s:\n\t%s" % (link.rel, link.href)
+        print("%s:\n\t%s" % (link.rel, link.href))
 
     else:
 
-        print "Activity Streams:  ", wf.activity_streams
-        print "Avatar:            ", wf.avatar
-        print "HCard:             ", wf.hcard
-        print "OpenID:            ", wf.open_id
-        print "Open Social:       ", wf.opensocial
-        print "Portable Contacts: ", wf.portable_contacts
-        print "Profile:           ", wf.profile
-        print "WebFist:           ", wf.webfist
-        print "XFN:               ", wf.rel("http://gmpg.org/xfn/11")
+        print("Activity Streams:  ", wf.activity_streams)
+        print("Avatar:            ", wf.avatar)
+        print("HCard:             ", wf.hcard)
+        print("OpenID:            ", wf.open_id)
+        print("Open Social:       ", wf.opensocial)
+        print("Portable Contacts: ", wf.portable_contacts)
+        print("Profile:           ", wf.profile)
+        print("WebFist:           ", wf.webfist)
+        print("XFN:               ", wf.rel("http://gmpg.org/xfn/11"))
