@@ -50,15 +50,15 @@ class WebFingerResponse(object):
 
     @property
     def aliases(self):
-        return self.jrd.get('aliases')
+        return self.jrd.get('aliases', [])
 
     @property
     def properties(self):
-        return self.jrd.get('properties')
+        return self.jrd.get('properties', {})
 
     @property
     def links(self):
-        return self.jrd.get('links')
+        return self.jrd.get('links', [])
 
     def rel(self, relation, attr='href'):
         links = self.links
@@ -76,7 +76,8 @@ class WebFingerClient(object):
 
     def jrd(self, host, resource, rel, raw=False):
         """ Load resource at given URL and attempt to parse either XRD or JRD
-            based on HTTP response Content-Type header.
+            based on HTTP response Content-Type header. The rel parameter
+            may be a single value or a list.
         """
 
         url = "https://%s/.well-known/webfinger" % host
@@ -91,19 +92,16 @@ class WebFingerClient(object):
             params['rel'] = rel
 
         resp = requests.get(url, params=params, headers=headers, timeout=self.timeout, verify=True)
-
         logging.debug('fetching JRD from %s' % resp.url)
 
-        content = resp.content
         content_type = resp.headers.get('Content-Type', '').split(';', 1)[0].strip()
-
         logging.debug('response content type: %s' % content_type)
 
         if content_type != WEBFINGER_TYPE and content_type not in LEGACY_WEBFINGER_TYPES:
             raise WebFingerException('Invalid response type from server')
 
         if raw:
-            return content
+            return resp.content
 
         return resp.json()
 
@@ -150,6 +148,8 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.DEBUG)
 
     wf = finger(args.acct, rel=args.rel)
+
+    print "--- %s ---" % wf.subject
 
     if args.rel:
 
